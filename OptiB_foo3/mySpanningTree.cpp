@@ -1,15 +1,23 @@
 #include "mySpanningTree.h"
+#include <unordered_map>
 #include <boost/graph/graph_traits.hpp>
 #include <iostream>
 #include <boost/graph/adjacency_list.hpp>
 #include <algorithm>    
 #include <iterator>
 #include <utility>                   // for std::pair
-#include <unordered_map>
+#include <queue>
 #include <functional>
+
+#include <vector>
+
 
 using namespace boost;
 
+
+
+
+/*
 void iterate_nodes(const Graph& g, std::unordered_map<int, int> colour_of_node) {
     // ...
 
@@ -27,8 +35,8 @@ void iterate_nodes(const Graph& g, std::unordered_map<int, int> colour_of_node) 
     }
         //std::cout << index[*vp.first] << " " << endl;
     //std::cout << std::endl;
-
 }
+*/
 
 int get_number_of_nodes(const Graph& g) {
     graph_traits<Graph>::vertex_iterator node_iter_begin, node_iter_end;
@@ -37,8 +45,18 @@ int get_number_of_nodes(const Graph& g) {
     return n;
 }
 
+//int get_number_of_edges(const Graph& g) {
+//    graph_traits<Graph>::edge_iterator edge_iter_begin, edge_iter_end;
+//    tie(edge_iter_begin, edge_iter_end) = edges(g);
+//    int m = edge_iter_end - edge_iter_begin;
+//    return m;
+//}
 
-std::vector<Edge> my_spanning_tree(const Graph& g) {
+
+
+
+/*
+std::vector<Edge> my_spanning_trees(const Graph& g) {
     std::vector<Edge> spanning_tree;
     // compute a minimal spanning tree for g
 
@@ -47,19 +65,50 @@ std::vector<Edge> my_spanning_tree(const Graph& g) {
     
     // Sort all edges by weight
     // Because boosts' edge_iterator is not working with stl's sort, first awkardly copy the edges into a stl vector and then use that to sort...
-    std::vector<Edge> sorted_edges;
+
+    
+    //std::vector<Edge> sorted_edges;
+    //graph_traits<Graph>::edge_iterator edge_it_start, edges_it_end;
+
+    //tie(edge_it_start, edges_it_end) = edges(g);
+    //for (auto edge_it = edge_it_start; edge_it != edges_it_end; edge_it++) {
+    //    sorted_edges.push_back(*edge_it);
+    //    //std::cout << "size " << sizeof(*edge_it)<<  " vs " << sizeof(edge_it) << std::endl;
+    //}
+   
+    //// Sort
+  
+    //std::sort(sorted_edges.begin(), sorted_edges.end(),
+    //    [g](Edge e1, Edge e2) -> bool {
+    //        return (get(edge_weight, g, e1)) < get(edge_weight, g, e2);
+    //        //return (get_weights[e1] < get_weight[e1]);
+    //    }
+    //);
+    //std::cout << "Done sorting" << std::endl;
+    //
+
+    size_t num_of_nodes = get_number_of_nodes(g);
+    std::cout << "Graph has " << num_of_nodes << " nodes and " << " edges" << std::endl;
+
+
+    // Sorting with priority queue
+   // property_map<Graph, edge_weight_t>::type weight_map = get(edge_weight, g);
+   
+    std::vector<std::pair<int, Edge>> foo;
+    std::priority_queue<std::pair<int, Edge>, std::vector<std::pair<int, Edge>>, std::greater<std::pair<int, Edge>>> Edge_weight_queue;
+    
+    
     graph_traits<Graph>::edge_iterator edge_it_start, edges_it_end;
     tie(edge_it_start, edges_it_end) = edges(g);
     for (auto edge_it = edge_it_start; edge_it != edges_it_end; edge_it++) {
-        sorted_edges.push_back(*edge_it);
+        //int weight = get(weight_map, edge_it);
+        int weight = get(edge_weight, g, *edge_it);
+        Edge_weight_queue.push(std::make_pair(weight, *edge_it));
+        //std::cout << "size " << sizeof(*edge_it)<<  " vs " << sizeof(edge_it) << std::endl;
     }
-    // Sort
-    std::sort(sorted_edges.begin(), sorted_edges.end(),
-        [g](Edge e1, Edge e2) -> bool {return (get(edge_weight, g, e1)) < get(edge_weight, g, e2); }
-    );
+
 
     
-    int num_of_nodes = get_number_of_nodes(g);
 
     // Now add edges in increasing order of weight, rejecting them if they close a loop
     // 
@@ -73,14 +122,19 @@ std::vector<Edge> my_spanning_tree(const Graph& g) {
     std::unordered_map<int, std::vector<int>> nodes_with_colour; //colour->node  returns list of node that have colour
     int max_colour = -1;
 
-    graph_traits<Graph>::edge_iterator ei, ei_end;
+    //graph_traits<Graph>::edge_iterator ei, ei_end;
     //for (tie(ei, ei_end) = edges(g); ei != ei_end; ++ei)
-    for (auto edge = sorted_edges.begin(); edge != sorted_edges.end(); edge++) {
+    //for (auto edge = sorted_edges.begin(); edge != sorted_edges.end(); edge++) {
+    while(spanning_tree.size() < num_of_nodes - 1){
+
         // Prints edge (source, target) and edge case
         //std::cout << "(" << source(*edge, g) << "," << target(*edge, g) << "): " << get(edge_weight, g, *edge) << " - ";
 
-        int node1 = source(*edge, g);
-        int node2 = target(*edge, g);
+        std::pair<int, Edge> pair_weight_edge = Edge_weight_queue.top();
+        Edge edge = pair_weight_edge.second;
+        Edge_weight_queue.pop();
+        int node1 = source(edge, g);
+        int node2 = target(edge, g);
         int colour1 = (colour_of_node.find(node1) == colour_of_node.end()) ? -2 : colour_of_node[node1];
         int colour2 = (colour_of_node.find(node2) == colour_of_node.end()) ? -2 : colour_of_node[node2];
         // -2 signifies has never been found yet
@@ -94,7 +148,7 @@ std::vector<Edge> my_spanning_tree(const Graph& g) {
                 colour_of_node[node2] = max_colour;
                 nodes_with_colour[max_colour] = std::vector<int>{ node1, node2 };
                 //std::cout << "both unseen nodes " << node1 << " & " << node2 << ", now with colour " << max_colour << std::endl;
-                spanning_tree.push_back(*edge);
+                spanning_tree.push_back(edge);
 
             }
             else {
@@ -140,14 +194,17 @@ std::vector<Edge> my_spanning_tree(const Graph& g) {
                 nodes_with_colour.erase(colour2);
 
             }
-            spanning_tree.push_back(*edge);
+            spanning_tree.push_back(edge);
        }
         // ...
 
-        if (spanning_tree.size() == num_of_nodes - 1) {
-            return spanning_tree;
-       }
+       // if (spanning_tree.size() == num_of_nodes - 1) {
+       //     return spanning_tree;
+        //}
     }
     //iterate_nodes(g, colour_of_node);
+
+    
     return spanning_tree;
 }
+
