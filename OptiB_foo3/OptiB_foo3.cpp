@@ -18,7 +18,8 @@ int main() {
         "(MST,ShortestPath,SteinerTree)?"
         << std::endl;
     std::string algorithm;
-    std::cin >> algorithm;
+    //std::cin >> algorithm;
+    algorithm = "ShortestPath";
     std::cout << "Which instance would you like to solve (1,2,3,4,5,6)?"
         << std::endl;
     std::string graphNumber;
