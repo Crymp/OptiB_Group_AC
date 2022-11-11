@@ -68,29 +68,6 @@ std::vector<Edge> my_steiner_tree(const Graph& g,
         }
         inside_Steiner[node1] = 2;
     }
-
-//    std::unordered_map<std::tuple<int, int>, int> steiner_edges;
-//    for (auto it : inside_Steiner) {
-//        Vertex node1 = it.first;
-//
-//        auto incident_edges = out_edges(node1, g);
-//        for (auto edge : make_iterator_range(incident_edges)) {
-//            int idx1 = source(edge, g);
-//            int idx2 = target(edge, g);
-//            if (idx2 < idx1) {
-//                std::swap(idx1, idx2);
-//            }
-//            std::pair<int, int> edge_pair {idx1, idx2};
-//           // if (steiner_edges.find(edge_pair) == steiner_edges.end()) {
-//            //    steiner_edges[edge_pair] = 1;
-////steiner_tree.push_back(edge.copy());
-//     //       }
-//
-//        }
-//    }
-
-
-   // std::cout << inside_Steiner.size() << " vs " << terminals.size() << std::endl;
         return steiner_tree;
     
 }
@@ -182,7 +159,6 @@ std::vector<Edge> my_steiner_tree(const Graph& g,
                 testflag = true;
                 break;
             }
-
         }
 
         //if (testflag == false) { std::cout << "Did not find any node\n"; }
