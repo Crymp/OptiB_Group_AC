@@ -40,7 +40,7 @@ std::vector<Vertex> my_shortest_path(const Graph &g, const Vertex &startVertex,
 
 
 
-  /*
+  
 
   // Custom typdef to keep track of node information // typedef std::tuple<int, Vertex, int> Nodeinfo;
 
@@ -62,7 +62,7 @@ std::vector<Vertex> my_shortest_path(const Graph &g, const Vertex &startVertex,
       }
   }
 
-  std::cout << "start vertex " << startVertex << ", end vertex " << endVertex << std::endl;
+ std::cout << "start vertex " << startVertex << ", end vertex " << endVertex << std::endl;
 
 
   // Build (full) shortest path trree
@@ -72,17 +72,17 @@ std::vector<Vertex> my_shortest_path(const Graph &g, const Vertex &startVertex,
       nodes_queue.pop();
       Nodeinfo foo = node_info_map[node1];
       int counterfoo = std::get<2>(foo);
-      std::cout << "( " << node1 << ": " << dist1 << ", " << counter1 << ")" << " vs " << "( " << std::get<1>(foo) << ": " << std::get<0>(foo) << ", " << std::get<2>(foo) << ")" << std::endl;
-      while (counter1 != counterfoo) {
+     // std::cout << "( " << node1 << ": " << dist1 << ", " << counter1 << ")" << " vs " << "( " << std::get<1>(foo) << ": " << std::get<0>(foo) << ", " << std::get<2>(foo) << ")" << std::endl;
+      while ((nodes_queue.size() != 0) && (counter1 != counterfoo)) {
           //Clear any outdated entries from queue
           foo = node_info_map[node1];
           counterfoo = std::get<2>(foo);
           std::tie(dist1, node1, counter1) = nodes_queue.top();
-          std::cout << "( " << node1 << ": " << dist1 << ", " << counter1 << ")" << " vs " << "( " << "__" << ": " << std::get<0>(foo) << ", " << std::get<2>(foo) << ")" << std::endl;
+         // std::cout << "( " << node1 << ": " << dist1 << ", " << counter1 << ")" << " vs " << "( " << "__" << ": " << std::get<0>(foo) << ", " << std::get<2>(foo) << ")" << std::endl;
 
           nodes_queue.pop();
       }
-      std::cout << "    Done \n";
+      //std::cout << "    Done \n";
       // Iterate through all outgoing_edges/neighbour nodes
       auto incident_edges = out_edges(node1, g);
       for (auto const edge : make_iterator_range(incident_edges)) {
@@ -91,28 +91,42 @@ std::vector<Vertex> my_shortest_path(const Graph &g, const Vertex &startVertex,
 
           int dist2; Vertex node2_pred; int counter2; //node2 is "w" in Dijsktras algorithm
           std::tie(dist2, node2_pred, counter2) = node_info_map[node2];
-          if (dist1 + edge_cost < dist2){
-              // Update dist, pred and counter if less
-              Nodeinfo node2_info_updated = Nodeinfo{ dist1 + edge_cost, node1, counter2 + 1 };
-              node_info_map[node2] = node2_info_updated;
-              nodes_queue.push(node2_info_updated);
-          }
+          if(counter2 != -1){
+              if (dist1 + edge_cost < dist2) {
+                  // Update dist, pred and counter if less
+                  node_info_map[node2] = Nodeinfo{ dist1 + edge_cost, node1, counter2 + 1 };
+                  nodes_queue.push(Nodeinfo{ dist1 + edge_cost, node2, counter2 + 1 });
+
+              }
+            }
+
       }
+      // Mark node1 as seen (equiv. remove to "remove v from V'  " in alg)
+      get<2>(node_info_map[node1]) = -1;
+
+
+
+      
      // std::cout << node1 << ", " << dist1 << ", " << counter1 << std::endl;
   }
 
   
 // Construct path from min_distance tree
 
-  Vertex pred = std::get<1>(node_info_map[endVertex]);
+  std::cout << "Done with setting them! \n";
+
+  Vertex pred = endVertex;//std::get<1>(node_info_map[endVertex]);
   path.push_back(pred);
   while (pred != startVertex) {
-      pred = std::get<1>(node_info_map[endVertex]);
+      std::cout << pred << ", ";
+      pred = std::get<1>(node_info_map[pred]);
       path.push_back(pred);
+      
   }
  
   std::reverse(path.begin(), path.end());
-  */
+  
+  //std::cout << "Done reversing!\n";
 
   return path;
 
