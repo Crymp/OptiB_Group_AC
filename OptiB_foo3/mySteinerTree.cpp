@@ -18,6 +18,7 @@ using namespace boost;
 
 std::vector<Edge> my_steiner_tree(const Graph& g,
     const std::vector<Vertex>& terminals) {
+    std::cout << "boop\n";
 
     // compute a steiner tree for g with terminals g
 
@@ -44,30 +45,52 @@ std::vector<Edge> my_steiner_tree(const Graph& g,
             inside_Steiner[node] = 1;
         }
         // Newest terminal is the first terminal in path;
+        Vertex finalvertex = path2terminal[0];
+       // std::cout << finalvertex << " is terminal?: " << (is_terminal.find(finalvertex) != is_terminal.end()) << "\n";
         counter++;
+        std::cout << counter << "\n";
     }
 
     // Now construct edge from list of terminals;
 
-    std::unordered_map<Edge, std::pair<Vertex,Vertex>> Steiner_edges;
-    for (auto it : inside_Steiner) {
-        Vertex node1 = it.first;
 
+    for (auto it : inside_Steiner) {
+        //        Vertex node1 = it.first;
+        Vertex node1 = it.first;
         auto incident_edges = out_edges(node1, g);
         for (auto edge : make_iterator_range(incident_edges)) {
-            int node2 = target(edge,g);
-            int 
-            std::pair<Vertex,Vertex> edge_pair {std::min(node1, node2), std::m(node1, node2) };
-            if (Steiner_edges.find(edge) == Steiner_edges.end()) {
-                Steiner_edges[edge] = ;
+            Vertex node2 = target(edge, g);
+            
+            // If node2 is inside Steiner set, but has not yet been marked
+            if ((inside_Steiner.find(node2) != inside_Steiner.end()) && (inside_Steiner[node2] != 2)) {
                 steiner_tree.push_back(edge);
             }
-
         }
+        inside_Steiner[node1] = 2;
     }
 
+//    std::unordered_map<std::tuple<int, int>, int> steiner_edges;
+//    for (auto it : inside_Steiner) {
+//        Vertex node1 = it.first;
+//
+//        auto incident_edges = out_edges(node1, g);
+//        for (auto edge : make_iterator_range(incident_edges)) {
+//            int idx1 = source(edge, g);
+//            int idx2 = target(edge, g);
+//            if (idx2 < idx1) {
+//                std::swap(idx1, idx2);
+//            }
+//            std::pair<int, int> edge_pair {idx1, idx2};
+//           // if (steiner_edges.find(edge_pair) == steiner_edges.end()) {
+//            //    steiner_edges[edge_pair] = 1;
+////steiner_tree.push_back(edge.copy());
+//     //       }
+//
+//        }
+//    }
 
 
+   // std::cout << inside_Steiner.size() << " vs " << terminals.size() << std::endl;
         return steiner_tree;
     
 }
@@ -81,6 +104,11 @@ std::vector<Edge> my_steiner_tree(const Graph& g,
         // Based on Dijsktra's algorithm 
 
         //
+
+
+        //std::cout << "*******************************************\n";
+        //std::cout << "is_terminal: ";  for (auto i : is_terminal) { std::cout << i.first << ", "; }; std::cout << std::endl;
+        //std::cout << "inside_Steiner: ";  for (auto i : inside_Steiner) { std::cout << i.first << ", "; }; std::cout << std::endl;
 
         std::unordered_map<Vertex, Nodeinfo> node_info_map; //v -> tuple {dist(v), pred(v), counter(v)}
 
@@ -105,6 +133,8 @@ std::vector<Edge> my_steiner_tree(const Graph& g,
         }
         Vertex endVertex;
 
+
+        bool testflag = false;
         // Build (full) shortest path trree
         while (nodes_queue.size() != 0) {
 
@@ -145,19 +175,23 @@ std::vector<Edge> my_steiner_tree(const Graph& g,
             // Mark node1 as seen (ie remove to "remove v from V'  " in alg)
             get<2>(node_info_map[node1]) = -1;
 
-            // If node1 is a Steiner, stop and return path
-            if (is_terminal.find(node1) != is_terminal.end()) {
+            // If node1 is a terminal node, that is not in steiner path already: then stop
+            if ((is_terminal.find(node1) != is_terminal.end()) && (inside_Steiner.find(node1) == inside_Steiner.end())) {
                 endVertex = node1;
+               // std::cout << "found node: " << node1 << "\n";
+                testflag = true;
                 break;
             }
 
         }
 
+        //if (testflag == false) { std::cout << "Did not find any node\n"; }
         // Construct path from endVertex (ie the closest node in Steiner set) to the root
         // Do not include endVertex itself!
 
         std::vector<Vertex> path;
         Vertex pred = endVertex;
+        path.push_back(pred);
         // Loop until pred is inside Steiner
         while (inside_Steiner.find(pred) == inside_Steiner.end()) {
             pred = std::get<1>(node_info_map[pred]);
