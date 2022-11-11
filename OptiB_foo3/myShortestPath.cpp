@@ -1,5 +1,4 @@
 #include "myShortestPath.h"
-#include "mySpanningTree.h"
 #include <unordered_map>
 #include <boost/graph/graph_traits.hpp>
 #include <iostream>

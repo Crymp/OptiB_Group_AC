@@ -19,7 +19,8 @@ int main() {
         << std::endl;
     std::string algorithm;
     //std::cin >> algorithm;
-    algorithm = "ShortestPath";
+    //algorithm = "ShortestPath";
+    algorithm = "SteinerTree";
     std::cout << "Which instance would you like to solve (1,2,3,4,5,6)?"
         << std::endl;
     std::string graphNumber;
