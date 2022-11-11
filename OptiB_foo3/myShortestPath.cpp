@@ -34,104 +34,107 @@ std::vector<Vertex> my_shortest_path(const Graph &g, const Vertex &startVertex,
   // compute a shortest path between startVertex and endVertex and save it in
   // the vector >>path<<
   
+  // Based on Dijsktra's algorithm 
+  
   //
 
 
+  // Some preamable on how did this implemenation.
+  // Using Dijsktra's algorithm to build the shortest spanning tree with root startVertex, until endVertex is found in the tree.
+  // 
+  // This implementation follows the algorimth as given in the notes.
+  // To keep track of "dist(v)" and "pred(v)" of each node v (and wether v is in V', the set of "not yet scanned vertices") we use a unordered (has) map that has constant O(1) acccess time.
+  std::unordered_map<Vertex, Nodeinfo> node_info_map; //v -> tuple {dist(v), pred(v), counter(v)}
+  // Nodeinfo is a custom tuple typedef tuple<int, Vertex, int>. 
+  // Counter(v)=-1 indicates that v no longer in V' (ie it has been "scanned"), counter(v)>=0 indicates v in V'.
+
+  // The algorithm also requires to find the node v that has the shortest dist(v) in V'.
+  // Naturally a priority_queue (min heap) comes in mind since it has O(1) access time (at the expense of O(nlog(n)) to build it).
+  // However it is required that some elements dist(v) values are modified. The solution is to allow duplicate entries, ie modifying an element means pushing a duplicate with the new value into the queue.
+  // When old/outdated elements are encountered, they are simply ignored, and popped from the queue. 
+  // The queue holds Nodeinfo type tuples {dist(v), v, counter(v)} for every v in V'.
+  // We keep track of wether a tuple in the queue is the "newest" through the counter variable. Evertime the tuple of node v is updated, the counter(v) is increased by +1 in the node_info_map (until it is permantly set to -1, once v is "scanned").
+  // Therefore if a tuple with node v but a counter value not equal to the value in the unordered map, it means that that tuple is outdated (or v has been removed from V).
+
+  std::priority_queue<Nodeinfo, std::vector<Nodeinfo>, std::greater<Nodeinfo>> nodes_queue;
+  // Note we used tuples, instead of structs, because tuples already have build in comparison ==,<=,<, operators by the first element
 
 
-
-  
-
-  // Custom typdef to keep track of node information // typedef std::tuple<int, Vertex, int> Nodeinfo;
-
-  // first is dist(v) in Alg, second is the vertex, and first is a counter keepin track of how often appeared in priority_queueu
-  std::priority_queue<Nodeinfo, std::vector<Nodeinfo>, std::greater<Nodeinfo>> nodes_queue; // Keeps track of nodes and their distances {dist, node, counter}
-  std::unordered_map<Vertex, Nodeinfo> node_info_map; //node -> {dist, pred, counter}
-
-  // Generate queue and lookup
+  // Build queue, and hash map (ie set distance values, and add all nodes to V')
   for (auto node : make_iterator_range(vertices(g))) {
-      //std::cout << node << std::endl;
       if (node != startVertex) {
           int dist = std::numeric_limits<int>::max(); //Set distance to "infinity"
-          nodes_queue.push(Nodeinfo{ dist, node, 0 });
-          node_info_map[node] = Nodeinfo{ dist, NULL, 0 };
+          int counter = 0;   // Mark node v in V', ie "yet to be scanned"
+          Vertex pred = NULL; 
+          nodes_queue.push(Nodeinfo{ dist, node, counter});
+          node_info_map[node] = Nodeinfo{ dist, pred, counter };
       }
       else {
+          // Root vertex s has special values dist(s)=0, pred(s)=s (but it is not yet scanned)
           nodes_queue.push(Nodeinfo{ 0, node, 0 });
           node_info_map[node] = Nodeinfo{ 0, node, 0 };
       }
   }
 
- std::cout << "start vertex " << startVertex << ", end vertex " << endVertex << std::endl;
-
 
   // Build (full) shortest path trree
   while (nodes_queue.size() != 0) {
-      int dist1; Vertex node1; int counter1; //node is "v" in Dijsktras algorithm
+
+      // Find the node with the lowest dist() in V'.
+      int dist1; // ie node v in alg
+      Vertex node1; 
+      int counter1;
       std::tie(dist1, node1, counter1) = nodes_queue.top();
       nodes_queue.pop();
-      Nodeinfo foo = node_info_map[node1];
-      int counterfoo = std::get<2>(foo);
-     // std::cout << "( " << node1 << ": " << dist1 << ", " << counter1 << ")" << " vs " << "( " << std::get<1>(foo) << ": " << std::get<0>(foo) << ", " << std::get<2>(foo) << ")" << std::endl;
-      while ((nodes_queue.size() != 0) && (counter1 != counterfoo)) {
-          //Clear any outdated entries from queue
-          foo = node_info_map[node1];
-          counterfoo = std::get<2>(foo);
+      //  Keep popping until first tuple in queue is no longer outdated
+      while ((nodes_queue.size() != 0) && (counter1 != std::get<2>(node_info_map[node1]))) {
           std::tie(dist1, node1, counter1) = nodes_queue.top();
-         // std::cout << "( " << node1 << ": " << dist1 << ", " << counter1 << ")" << " vs " << "( " << "__" << ": " << std::get<0>(foo) << ", " << std::get<2>(foo) << ")" << std::endl;
-
           nodes_queue.pop();
       }
-      //std::cout << "    Done \n";
-      // Iterate through all outgoing_edges/neighbour nodes
+      
+      // Iterate through all incident edges e = (v, w)
       auto incident_edges = out_edges(node1, g);
       for (auto const edge : make_iterator_range(incident_edges)) {
-          Vertex node2 = target(edge, g);
+          
           int edge_cost = get(edge_weight, g, edge);
 
-          int dist2; Vertex node2_pred; int counter2; //node2 is "w" in Dijsktras algorithm
+          // Get information about neighbouring node w 
+          Vertex node2 = target(edge, g); 
+          int dist2;
+          Vertex node2_pred; 
+          int counter2;
           std::tie(dist2, node2_pred, counter2) = node_info_map[node2];
-          if(counter2 != -1){
-              if (dist1 + edge_cost < dist2) {
-                  // Update dist, pred and counter if less
-                  node_info_map[node2] = Nodeinfo{ dist1 + edge_cost, node1, counter2 + 1 };
-                  nodes_queue.push(Nodeinfo{ dist1 + edge_cost, node2, counter2 + 1 });
 
-              }
+          // If w in V' (ie unscanned), update distance value if neccessary
+          if( (counter2 != -1) && (dist1 + edge_cost < dist2)){
+              int dist2 = dist1 + edge_cost;
+              counter2++;
+              // Update tuple in hash_map, and push new updated tuple into queue
+              node_info_map[node2] = Nodeinfo{ dist2, node1, counter2};
+              nodes_queue.push(Nodeinfo{ dist2, node2, counter2});
             }
-
       }
-      // Mark node1 as seen (equiv. remove to "remove v from V'  " in alg)
+      // Mark node1 as seen (ie remove to "remove v from V'  " in alg)
       get<2>(node_info_map[node1]) = -1;
+     
+      // If endVertex is marked as seen, then endVertex is permantly marked in shortestpathtree, ie we have found the shorted path from so to v/
+      if (node1 == endVertex) {
+          break;
+      }
 
-
-
-      
-     // std::cout << node1 << ", " << dist1 << ", " << counter1 << std::endl;
   }
-
   
-// Construct path from min_distance tree
-
-  std::cout << "Done with setting them! \n";
-
-  Vertex pred = endVertex;//std::get<1>(node_info_map[endVertex]);
+// Construct path from min_distance tree by going backward
+  Vertex pred = endVertex;
   path.push_back(pred);
   while (pred != startVertex) {
-      std::cout << pred << ", ";
       pred = std::get<1>(node_info_map[pred]);
-      path.push_back(pred);
-      
+      path.push_back(pred);   
   }
- 
-  std::reverse(path.begin(), path.end());
-  
-  //std::cout << "Done reversing!\n";
+ // Reverse path
+  std::reverse(path.begin(), path.end());  
 
   return path;
-
-
-
 }
 
 
