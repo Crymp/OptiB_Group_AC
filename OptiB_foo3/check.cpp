@@ -177,6 +177,7 @@ bool checkMaxFlow(DiGraph &g, DiGraph &gOrg, const DiVertex &s,
     return false;
   }
   unsigned int boostFlow{boost::boykov_kolmogorov_max_flow(gOrg, s, t)};
+  std::cout << "Boost flow = " << boostFlow <<std::endl;
   if (flow != boostFlow) {
     std::cout << "Your calculated flow of " << flow << " is not correct." << std::endl;
     return false;

@@ -8,7 +8,16 @@
 #include <limits>
 #include <algorithm>
 
+#include <iomanip>
+#include <string>
+#include <cmath>
+#include <cstdlib>
+
+
 using namespace boost;
+
+
+
 
 unsigned int my_maxflow(DiGraph& g, const DiVertex& s, const DiVertex& t) {
 
@@ -29,75 +38,182 @@ unsigned int my_maxflow(DiGraph& g, const DiVertex& s, const DiVertex& t) {
 
     //TODO implement Max Flow Algorithm
 
+
+    // Initialize capacities
+    for (auto e : make_iterator_range(edges(g))) {
+        get(res_capacity, e) = get(capacity, e);
+    }
+
+    //for (auto e : make_iterator_range(out_edges(s, g))) {
+    //    if (target(e, g) == t) {
+    //        get(res_capacity, e) += 10;
+    //    }
+    //}
+
+    //dists[t] = std::numeric_limits<unsigned int>::max();
+
+    unsigned int max_val = 0;
+    for (auto e : make_iterator_range(edges(g))) {
+        max_val += get(capacity, e);
+    }
+
+    std::cout << "source: " << s << ", target: " << t << "\n";
+
+
+    bool flag = true;
+    while (flag) {
+        flag = false;
+       // std::cout << dists[t] << ", flow: " << flow << std::endl;
+        
+
+        // Update weights to res_capacity for Dijktras
+        for (auto e : make_iterator_range(edges(g))) {
+            unsigned int w = get(res_capacity, e);
+            w = (w == 0) ? max_val : w;
+            get(weight, e) = w;
+        }
+        boost::dijkstra_shortest_paths(g, s, predecessor_map(boost::make_iterator_property_map(preds.begin(), get(boost::vertex_index, g))).distance_map(boost::make_iterator_property_map(dists.begin(), get(boost::vertex_index, g))));
+      
+        // Find minimum capacity along path
+        unsigned int  min_res_cap = std::numeric_limits<unsigned int>::max();
+        Vertex node = t;
+        Vertex pred;
+        while (node != s) {
+            pred = preds[node];
+            for (auto e : make_iterator_range(out_edges(pred, g))) {
+               // std::cout << e << ": " << get(weight, e) << "\n";
+                if (target(e, g) == node) {
+                    unsigned int res_cap = get(res_capacity, e);
+                    min_res_cap = std::min(min_res_cap, res_cap);
+                }
+            }
+            node = pred;
+        }
+
+        //std::cout << "min_res_cap: " << min_res_cap << "\n";
+        if (min_res_cap == 0) {
+            return flow;
+        }
+
+        // Update capacities along path
+        node = t;
+        while (node != s) {
+
+            //unsigned int rc0, rc1, rc2, rc3;
+
+            pred = preds[node];
+            for (auto e : make_iterator_range(out_edges(pred, g))) {
+                if (target(e, g) == node) {
+                    get(res_capacity, e) -= min_res_cap;
+                   // rc1 = get(res_capacity, e);
+                    auto rev_e = get(rev, e);
+                    get(res_capacity, rev_e) += min_res_cap;
+                   // rc2 = get(res_capacity, rev_e);
+                }
+            }
+            for (auto e : make_iterator_range(out_edges(node, g))) {
+                if (target(e, g) == pred) {
+                    //get(res_capacity, e) +=min_res_cap;
+                   // rc3 = get(res_capacity, e);
+                }
+            }
+            //std::cout << pred << "->" << node << ": " << rc1 << ", " << rc2 << ", " << rc3 << "\n";
+            node = pred;
+        }
+        flow += min_res_cap;
+
+        flag = (dists[t] > 0);
+        //std::cout << "dists[t]: " << dists[t] << "\n";
+    }
+    return flow;
+}
+
+
     // Lookup table for vertex endpoints to the edge object.... fed up trying to figure out how to do this properly with boost
     // C++ is so "high level", that one is at a level so high that the only way to see anything is to drop into the mess of low level
-    unordered_map<std::pair<Vertex, Vertex>, detail::edge_desc_impl<directed_tag, size_t>> Endpts2Edge;    
-    size_t max_cap = 0;
-    size_t num_edges = 0;
-    for (detail::edge_desc_impl<directed_tag, size_t> e : make_iterator_range(edges(g))) {
-       // std::cout << e << " : " << get(weight, e);
-        Endpts2Edge[std::pair < Vertex, Vertex>(source(e, g), target(e, g))] = e;
+    //unordered_map<std::pair<Vertex, Vertex>, detail::edge_desc_impl<directed_tag, size_t>> Endpts2Edge;    
+    //size_t tot_cap = 0;
+    //size_t num_edges = 0;
+    //for (detail::edge_desc_impl<directed_tag, size_t> e : make_iterator_range(edges(g))) {
+    //   // std::cout << e << " : " << get(weight, e);
+    //    Endpts2Edge[std::pair < Vertex, Vertex>(source(e, g), target(e, g))] = e;
 
 
-       // Also initialize values of weights and such
-        std::cout << e << ": " << get(capacity, e) << ", " << get(res_capacity, e) << "\n";
-            // get(res_capacity, e) = get(capacity, e);
-        max_cap += get(capacity, e);
-        num_edges++
-    }		
+    //   // Also initialize values of weights and such
+    //    std::cout << e << ": " << get(capacity, e) << ", " << get(res_capacity, e) << "  --  ";// << "\n";
+    //    auto re = get(rev, e);
+    //    //std::cout << re << ": " << get(res_capacity, re) << "\n";
+    //    if (source(e, g) == target(e, g)) {
+    //        std::cout << "alarm! " << e << "\n";
+    //    }
+    //    get(res_capacity, e) = get(capacity, e);
+    //    tot_cap += get(capacity, e);
+    //    num_edges++;
+    //}		
 
-    size_t max_num = 
-    std::cout << "max_cap: " << max_cap << ", num_edges: " << num_edges << "... overflow ratio" <<  << "\n";
+    //std::cout << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa\n";
+    //for (auto e : make_iterator_range(edges(g))) {
+    //    //auto re = get(rev, e);
+    //    auto re = Endpts2Edge[std::pair<Vertex, Vertex>(target(e, g), source(e, g))];
+    //    auto foo = get(res_capacity, e);
+    //    auto bar = get(res_capacity, re);
+    //    std::cout << e << ": " << foo << ", " << bar << std::endl;
+    //}
+
+    // foo
+    //size_t max_num = std::numeric_limits<unsigned int>::max();
+    //std::cout << max_num << std::endl;
+    //std::cout << tot_cap * num_edges << std::endl;
+    //std::cout << "max_cap: " << tot_cap << ", num_edges: " << num_edges << ", max:" << tot_cap*num_edges << "... overflow? " << (tot_cap * num_edges >= max_num) << "\n";
+    //std::cout << "source: " << s << ", target: " << t << std::endl;
+    //unsigned int max_cap = tot_cap;
+
+    //dists[t] = 0;
+    //size_t i = 0;
+    //while (dists[t] <= max_cap) {
+    //    for (auto d : dists) {
+    //        std::cout << d << ", ";
+      //  }
+    //    
+    //    //update edge weights as "residual capacity"
+    //    for (auto e : make_iterator_range(edges(g))) {
+    //        unsigned int w = get(res_capacity, e);
+    //        w = (w == 0) ? max_cap : w;
+    //        get(weight, e) = w;
+    //    }
+    //    
+    //    // Find path with shortest path from s -> t
+    //    boost::dijkstra_shortest_paths(g, s, predecessor_map(boost::make_iterator_property_map(preds.begin(), get(boost::vertex_index, g))).distance_map(boost::make_iterator_property_map(dists.begin(), get(boost::vertex_index, g))));
+    //    // Find minimum residual capacity in path from s -> t
+    //    Vertex node = t;
+    //    Vertex pred;
+    //    unsigned int min_res_cap = std::numeric_limits<int>::max();
+    //    while (node != s) {
+    //        pred = preds[node];
+    //        detail::edge_desc_impl<directed_tag, size_t> edge = Endpts2Edge[std::pair<Vertex, Vertex>(pred, node)];
+    //        //std::cout << edge << "\n";
+    //        unsigned int res_cap = get(res_capacity, edge);
+    //        min_res_cap = std::min(min_res_cap, res_cap);
+    //        node = pred;
+    //    }
+    //  
+    //    // Adjust residual capacities along path s -> t
+    //    node = t;
+    //    while (node != s) {
+    //        pred = preds[node];
+    //        detail::edge_desc_impl<directed_tag, size_t> edge = Endpts2Edge[std::pair<Vertex, Vertex>(pred, node)];
+    //        auto rev_edge = get(rev, edge);
+    //        /*std::cout << edge << " : " << rev_edge << "\n";*/
+    //        //std::cout << get(res_capacity, edge) << " : " << get(res_capacity, rev_edge) << "\n";
+    //        get(res_capacity, edge) -=  min_res_cap;
+    //        get(res_capacity, rev_edge) += min_res_cap;
+    //        node = pred;
+    //    }
+    //    flow += min_res_cap;
+    //    i++;
+    //}
 
 
-    std::cout << "source: " << s << ", target: " << t << std::endl;
-
-//    dists[t] = 0;
-//    while (dists[t] == 0) {
-//        for (auto d : dists) {
-//            std::cout << d << ", ";
-//        }
-//        std::cout << "\n";
-//        
-//        //update edge weights as "residual capacity"
-//        for (auto e : make_iterator_range(edges(g))) {
-//            get(weight, e) = get(res_capacity, e);
-//            auto w = get(weight, e);
-//
-//        }
-//        
-//        // Find path with shortest path from s -> t
-//        boost::dijkstra_shortest_paths(g, s, predecessor_map(boost::make_iterator_property_map(preds.begin(), get(boost::vertex_index, g))).distance_map(boost::make_iterator_property_map(dists.begin(), get(boost::vertex_index, g))));
-//#
-//        // Find minimum residual capacity in path from s -> t
-//        Vertex node = t;
-//        Vertex pred;
-//        size_t min_res_cap = std::numeric_limits<int>::max();
-//        while (node != s) {
-//            pred = preds[node];
-//            detail::edge_desc_impl<directed_tag, size_t> edge = Endpts2Edge[std::pair<Vertex, Vertex>(pred, node)];
-//            std::cout << edge << "\n";
-//            size_t res_cap = get(res_capacity, edge);
-//
-//            min_res_cap = std::min(min_res_cap, res_cap);
-//            node = pred;
-//        }
-//      
-//        // Adjust residual capacities along path s -> t
-//        node = t;
-//        while (node != s) {
-//            pred = preds[node];
-//            detail::edge_desc_impl<directed_tag, size_t> edge = Endpts2Edge[std::pair<Vertex, Vertex>(pred, node)];
-//            auto rev_edge = get(rev, edge);
-//            get(res_capacity, edge) -=  min_res_cap;
-//            get(res_capacity, rev_edge) += min_res_cap;
-//            node = pred;
-//        }
-//        flow += min_res_cap;
-//    }
-//
-//  return flow;
-//}
 
 
 
