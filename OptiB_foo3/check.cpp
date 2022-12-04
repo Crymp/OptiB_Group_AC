@@ -26,6 +26,7 @@ bool checkIndependence(const std::vector<Vertex> &p, const Graph &g) {
 bool checkBiPartition(const Graph &g, const Partition_variant &res) {
 
   bool bipartite = is_bipartite(g);
+  std::cout << "Boost bipartite: " << bipartite << std::endl;
   bool isBiPartition = res.which() == 0;
   if (!(bipartite == isBiPartition)) {
     return false;
