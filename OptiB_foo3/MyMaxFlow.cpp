@@ -4,14 +4,14 @@
 #include <boost/property_map/property_map.hpp>
 #include <boost/graph/dijkstra_shortest_paths.hpp>
 #include <iostream>
-#include <unordered_map>
+//#include <unordered_map>
 #include <limits>
 #include <algorithm>
 
-#include <iomanip>
-#include <string>
-#include <cmath>
-#include <cstdlib>
+//#include <iomanip>
+//#include <string>
+//#include <cmath>
+//#include <cstdlib>
 
 
 using namespace boost;
@@ -20,6 +20,18 @@ using namespace boost;
 
 
 unsigned int my_maxflow(DiGraph& g, const DiVertex& s, const DiVertex& t) {
+    // Note: As suggested by the code skeleton, we use Dijktra's algorithm to find the (shortest) paths of non-zero residual capacity from s to t;
+    // As such, in each iteration of pushing flow through a new path, the weights are set to the residual capacity for each edge;
+    // But to ensure that Dijktra's algorithm doesn't find paths involving an edge of zero residual capacity:
+    // if an edge's residual capacity is zero, its weight will not be initialized as zero, but to a very large value.
+    // This value should be larger than the total capacity of any path that is valid.
+    // The upper bound to this is sum of capacities over all edges in g, which we call "max_val"
+    // We know when there are no paths left where every edge has a non-zero capacity, when the total distance from s to t is larger than max_val.
+    // (since it means at least one edge has a residual capacity of 0, ie a weight of max_val).
+    // 
+    // This is a bit of a dirty trick, since it can result in overflow errors for unsigned int. But luckily it works for all graphs given here.
+    // For a more general implementation beyond, one should either use a specific algorithm to find paths of non-zero capacities (e.g. modified dijkstras).
+    // or modify the graph itself by e.g. removing edges once saturated.
 
     //save flow in variable flow
     unsigned int flow = 0;
@@ -36,52 +48,42 @@ unsigned int my_maxflow(DiGraph& g, const DiVertex& s, const DiVertex& t) {
     //vector with distances (for dijkstra)
     std::vector<unsigned int> dists(num_vertices(g));
 
-    //TODO implement Max Flow Algorithm
 
-
-    // Initialize capacities
+    // Initialize residual capacities and compute max_val (see above)
+    unsigned int max_val = 1;
     for (auto e : make_iterator_range(edges(g))) {
         get(res_capacity, e) = get(capacity, e);
-    }
-
-    //for (auto e : make_iterator_range(out_edges(s, g))) {
-    //    if (target(e, g) == t) {
-    //        get(res_capacity, e) += 10;
-    //    }
-    //}
-
-    //dists[t] = std::numeric_limits<unsigned int>::max();
-
-    unsigned int max_val = 0;
-    for (auto e : make_iterator_range(edges(g))) {
         max_val += get(capacity, e);
     }
 
-    std::cout << "source: " << s << ", target: " << t << "\n";
 
+    // Loop until can no longer push any extra flow (break conditions built inside)
+    while (true) {
 
-    bool flag = true;
-    while (flag) {
-        flag = false;
-       // std::cout << dists[t] << ", flow: " << flow << std::endl;
-        
-
-        // Update weights to res_capacity for Dijktras
+        // Initialize weights as residual capacities* (see comment above about max_val)
         for (auto e : make_iterator_range(edges(g))) {
-            unsigned int w = get(res_capacity, e);
-            w = (w == 0) ? max_val : w;
-            get(weight, e) = w;
+            unsigned int res_cap = get(res_capacity, e);
+            // max_val indicates that an edge is satured with flow.
+            get(weight, e) = (res_cap == 0) ? max_val : res_cap;
         }
+
+        // Find shorted path of residual_capacities from s to t
         boost::dijkstra_shortest_paths(g, s, predecessor_map(boost::make_iterator_property_map(preds.begin(), get(boost::vertex_index, g))).distance_map(boost::make_iterator_property_map(dists.begin(), get(boost::vertex_index, g))));
       
-        // Find minimum capacity along path
+        // Terminate if path involves a saturated edge (if true for shortest, this will be true for all,... see beginning comment)
+        if (dists[t] >= max_val) {
+            break;
+        }
+
+        // Find minimum capacity along path from s->t (backwards)
         unsigned int  min_res_cap = std::numeric_limits<unsigned int>::max();
         Vertex node = t;
         Vertex pred;
         while (node != s) {
             pred = preds[node];
+
+            // Find edge object that matches pred->node
             for (auto e : make_iterator_range(out_edges(pred, g))) {
-               // std::cout << e << ": " << get(weight, e) << "\n";
                 if (target(e, g) == node) {
                     unsigned int res_cap = get(res_capacity, e);
                     min_res_cap = std::min(min_res_cap, res_cap);
@@ -90,40 +92,29 @@ unsigned int my_maxflow(DiGraph& g, const DiVertex& s, const DiVertex& t) {
             node = pred;
         }
 
-        //std::cout << "min_res_cap: " << min_res_cap << "\n";
-        if (min_res_cap == 0) {
-            return flow;
-        }
+        ////std::cout << "min_res_cap: " << min_res_cap << "\n";
+        //if (min_res_cap == 0) {
+        //    break;
+        //}
 
-        // Update capacities along path
+        // Update flow / residual capacities along path from s->t (backwards)
         node = t;
         while (node != s) {
-
-            //unsigned int rc0, rc1, rc2, rc3;
-
             pred = preds[node];
             for (auto e : make_iterator_range(out_edges(pred, g))) {
+                
+                // Find edge that matches pred->node
                 if (target(e, g) == node) {
                     get(res_capacity, e) -= min_res_cap;
-                   // rc1 = get(res_capacity, e);
+                    
+                    // Update flow in reverse direction
                     auto rev_e = get(rev, e);
                     get(res_capacity, rev_e) += min_res_cap;
-                   // rc2 = get(res_capacity, rev_e);
                 }
             }
-            for (auto e : make_iterator_range(out_edges(node, g))) {
-                if (target(e, g) == pred) {
-                    //get(res_capacity, e) +=min_res_cap;
-                   // rc3 = get(res_capacity, e);
-                }
-            }
-            //std::cout << pred << "->" << node << ": " << rc1 << ", " << rc2 << ", " << rc3 << "\n";
             node = pred;
         }
         flow += min_res_cap;
-
-        flag = (dists[t] > 0);
-        //std::cout << "dists[t]: " << dists[t] << "\n";
     }
     return flow;
 }
