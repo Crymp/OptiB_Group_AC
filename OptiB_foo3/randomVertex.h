@@ -1,3 +1,3 @@
 #include "types.h"
 
-std::pair<Vertex, Vertex> get_tuple_of_distinct_vertices(const Graph &g);
+std::pair<DiVertex, DiVertex> get_tuple_of_distinct_vertices(const DiGraph &g);

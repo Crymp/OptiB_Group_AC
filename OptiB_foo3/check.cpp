@@ -2,135 +2,226 @@
 
 #include <iostream>
 
+#include <boost/graph/bipartite.hpp>
+#include <boost/graph/boykov_kolmogorov_max_flow.hpp>
 #include <boost/graph/connected_components.hpp>
-#include <boost/graph/dijkstra_shortest_paths.hpp>
-#include <boost/graph/kruskal_min_spanning_tree.hpp>
+//#include "maximum_weighted_matching.hpp"
+#include <boost/graph/maximum_weighted_matching.hpp>
 
-// Compute total sum of a vector of weighted edges
-int weightSum(const std::vector<Edge> &edges,
-              const EdgeWeightPropertyMap &edgeWeightMap) {
-  int totalWeight{0};
-  for (std::vector<Edge>::const_iterator ei = edges.begin(); ei != edges.end();
-       ++ei)
-    totalWeight += edgeWeightMap[*ei];
-  return totalWeight;
-}
-int weightSum(const std::vector<Edge> &edges,
-              const constEdgeWeightPropertyMap &edgeWeightMap) {
-  int totalWeight{0};
-  for (std::vector<Edge>::const_iterator ei = edges.begin(); ei != edges.end();
-       ++ei)
-    totalWeight += edgeWeightMap[*ei];
-  return totalWeight;
-}
-
-// Check whether the given mst is a proper minimal spanning tree for graph g
-bool checkSpanningTree(const Graph &g, const std::vector<Edge> &mst) {
-  constEdgeWeightPropertyMap edgeWeightMap = get(boost::edge_weight, g);
-  std::vector<int> component(num_vertices(g));
-  if (boost::connected_components(g, &component[0]) != 1) {
-    std::cout << "Graph has too many or not enough connected components"
-              << std::endl;
-    return false;
-  }
-  if (mst.size() + 1 != num_vertices(g)) {
-    std::cout << "The computed graph contains too many or not enough edges"
-              << std::endl;
-    return false;
-  }
-  int mstCosts{weightSum(mst, edgeWeightMap)};
-  std::vector<Edge> spanning_tree;
-  boost::kruskal_minimum_spanning_tree(g, std::back_inserter(spanning_tree));
-  if (mstCosts == weightSum(spanning_tree, edgeWeightMap)) {
-    std::cout << "The computed graph is a minimum spanning tree of weight "
-              << mstCosts << "." << std::endl;
-    return true;
-  }
-  assert(mstCosts > weightSum(spanning_tree, edgeWeightMap));
-  std::cout << "The computed graph is a non-minimum spanning tree of weight "
-            << mstCosts << "." << std::endl;
-  return false;
-}
-
-// Check whether the given path is a shortest path in g
-bool checkPath(const Graph &g, const Vertex &startVertex,
-               const Vertex &endVertex, const std::vector<Vertex> &path) {
-  constEdgeWeightPropertyMap edgeWeightMap = get(boost::edge_weight, g);
-  // check whether the vertex sequence in path represents a valid path in g+
-  if (path.empty()) {
-    std::cout << "This is not a valid path." << std::endl;
-    return false;
-  }
-  for (std::vector<Vertex>::const_iterator i = path.begin() + 1;
-       i != path.end(); ++i) {
-    if (!edge(*(i - 1), *i, g).second) {
-      std::cout << "This is not a valid path." << std::endl;
-      return false;
+bool checkIndependence(const std::vector<Vertex> &p, const Graph &g) {
+  for (std::vector<Vertex>::const_iterator vi = p.begin(); vi != p.end();
+       ++vi) {
+    for (std::vector<Vertex>::const_iterator wi = vi; wi != p.end(); ++wi) {
+      if (boost::edge(*vi, *wi, g).second) {
+        std::cout
+            << "There exists at least one edge within a bipartition class."
+            << std::endl;
+        return false;
+      }
     }
   }
-  // check whether the first and last vertex in path match startVertex and
-  // endVertex
-  if (path.front() != startVertex or path.back() != endVertex) {
-    std::cout << "This is not a path from " << startVertex << " to "
-              << endVertex << " but from " << path.front() << " to "
-              << path.back() << std::endl;
+  return true;
+}
+
+bool checkBiPartition(const Graph &g, const Partition_variant &res) {
+
+  bool bipartite = is_bipartite(g);
+  bool isBiPartition = res.which() == 0;
+  if (!(bipartite == isBiPartition)) {
     return false;
   }
-  // >>path<< is a valid path from startVertex to endVertex
-  // check whether >>path<< is a shortest path
-  // compute the length of >>path<<
-  int pathWeight{0};
-  for (std::vector<Vertex>::const_iterator i = path.begin() + 1;
-       i != path.end(); ++i) {
-    pathWeight += edgeWeightMap[edge(*(i - 1), *i, g).first];
+  if (isBiPartition) {
+    std::vector<Vertex> myPartitionA(
+        boost::get<std::pair<std::vector<Vertex>, std::vector<Vertex>>>(res)
+            .first);
+    std::vector<Vertex> myPartitionB(
+        boost::get<std::pair<std::vector<Vertex>, std::vector<Vertex>>>(res)
+            .second);
+    if (myPartitionA.size() + myPartitionB.size() != boost::num_vertices(g)) {
+      std::cout << "The partitioning is invalid." << std::endl;
+      return false;
+    }
+    checkIndependence(myPartitionA, g);
+    checkIndependence(myPartitionB, g);
+    std::cout << "The computed bipartitioning is valid." << std::endl;
+  } else {
+    std::vector<Vertex> myOddCycle(boost::get<std::vector<Vertex>>(res));
+    if (myOddCycle.front() != myOddCycle.back()) {
+      std::cout << "The computed cycle should be simple and start and end with "
+                   "the same vertex."
+                << std::endl;
+      return false;
+    }
+    if (myOddCycle.size() % 2 != 0) {
+      std::cout << "The computed cycle is not of odd length." << std::endl;
+      return false;
+    }
+    for (std::vector<Vertex>::const_iterator vi = myOddCycle.begin();
+         vi != myOddCycle.end() - 1; ++vi) {
+      if (!boost::edge(*vi, *(vi + 1), g).second) {
+        std::cout << "The cycle uses edges that do not exist." << std::endl;
+        return false;
+      }
+    }
+    std::cout << "The computed odd cycle is valid." << std::endl;
   }
-  // compute a shortest path from startVertex to endVertex
-  std::vector<Vertex> p(num_vertices(g));
-  std::vector<int> d(num_vertices(g));
-  boost::dijkstra_shortest_paths(
-      g, startVertex, boost::predecessor_map(&p[0]).distance_map(&d[0]));
-  if (pathWeight > d[endVertex]) {
-    std::cout << "The sequence of nodes defines a non-shortest path of weight "
-              << pathWeight << "." << std::endl;
-    return false;
-  }
-  assert(pathWeight == d[endVertex]);
-  std::cout << "The sequence of nodes defines a shortest path of weight "
-            << pathWeight << "." << std::endl;
 
   return true;
 }
 
-struct edge_not_in_tree {
-  edge_not_in_tree(const std::vector<Edge> &tree_, Graph &g_) : tree(tree_), g(g_) {};
-  bool operator()(Edge e) {
-    return (std::find_if(tree.begin(), tree.end(), [&](Edge x) {
-      return ( ( (boost::source(e,g)==boost::source(x,g)) && (boost::target(e,g)==boost::target(x,g))) || (  (boost::source(e,g)==boost::target(x,g)) && (boost::target(e,g)==boost::source(x,g))));
-       }) == tree.end());
-  }
-  std::vector<Edge> tree;
-  Graph &g;
-};
+bool checkMaxWeightedMatching(const Graph &g, const std::vector<Vertex> &mate) {
 
-bool checkSteinerTree(Graph g, const std::vector<Edge> &steiner_tree,
-                      const std::vector<Vertex> &terminals) {
-  
-  boost::remove_edge_if(edge_not_in_tree(steiner_tree, g), g);
-  // Check whether all terminals are in the same connected component
-  EdgeWeightPropertyMap edgeWeightMap = get(boost::edge_weight, g);
-  std::vector<int> component(num_vertices(g));
-  connected_components(g, &component[0]);
-  int terminalsComponent = component[terminals[0]];
-  for (std::vector<Vertex>::const_iterator i = terminals.begin();
-       i != terminals.end(); ++i) {
-    if (component[*i] != terminalsComponent) {
-      std::cout << "The computed graph does not connect all terminal nodes."
+  VertexIterator vi, vi_end;
+
+  // check matching
+  for (boost::tie(vi, vi_end) = vertices(g); vi != vi_end; ++vi) {
+    if (mate[*vi] != boost::graph_traits<Graph>::null_vertex()) {
+      // check if all chosen edges exist in g
+      if (!edge(*vi, mate[*vi], g).second) {
+        std::cout << "The computed matching is invalid." << std::endl;
+        return false;
+      }
+      // check that no chosen edges are incident
+      if (mate[mate[*vi]] != *vi) {
+        std::cout << "The computed matching is invalid." << std::endl;
+        return false;
+      }
+    }
+  }
+
+  // check optimality
+  std::vector<Vertex> optMate(num_vertices(g));
+  maximum_weighted_matching(g, &optMate[0]);
+  int optWeight = matching_weight_sum(g, &optMate[0]);
+  int weight = matching_weight_sum(g, &mate[0]);
+  if (weight < optWeight) {
+    std::cout << "The computed matching has not maximum weight." << std::endl;
+  }
+  assert(weight == optWeight);
+  std::cout << "The computed matching has maximum weight " << weight << "."
+            << std::endl;
+  return true;
+}
+
+// bool checkBettingGame(const std::map<Team, unsigned int> &bet, const
+// std::vector<Matchday> &season){
+bool checkBettingGame(const std::map<Team, unsigned int> &bet,
+                      const std::vector<Matchday> &season) {
+  if (bet.size() != 17) {
+    std::cout << "The betting does not choose 17 teams." << std::endl;
+    return false;
+  }
+  unsigned int points{0};
+  for (std::map<Team, unsigned int>::const_iterator ki = bet.begin();
+       ki != bet.end(); ++ki) {
+    Team team{(*ki).first};
+    unsigned int day{(*ki).second};
+    if (bet.count(team) != 1) {
+      std::cout << "The betting does not choose 17 different teams."
                 << std::endl;
       return false;
     }
+    Matchday matchday{season.at(day)};
+    for (std::vector<Match>::const_iterator mi = matchday.begin();
+         mi != matchday.end(); ++mi) {
+      Score score = (*mi).second;
+      if (team == (*mi).first.first) {
+        if (score.first > score.second) {
+          points += 3;
+          break;
+        } else if (score.first == score.second) {
+          points += 1;
+          break;
+        }
+      } else if (team == (*mi).first.second) {
+        if (score.first < score.second) {
+          points += 3;
+          break;
+        } else if (score.first == score.second) {
+          points += 1;
+          break;
+        }
+      }
+    }
   }
-  int treeWeight = weightSum(steiner_tree, edgeWeightMap);
-  std::cout << "The computed graph connects all terminal nodes and has weight "
-            << treeWeight << "." << std::endl;
+  if (points != 51) {
+    std::cout << "The betting is valid, but not optimal." << std::endl;
+    return false;
+  }
+  std::cout << "The betting is valid with an optimal value of 51." << std::endl;
+  return true;
+}
+
+bool equalGraph(DiGraph &g, DiGraph &gOrg) {
+  EdgeCapacityMap capacity = get(boost::edge_capacity, g);
+  EdgeCapacityMap capacityOrg{get(boost::edge_capacity, gOrg)};
+  if (num_vertices(g) != num_vertices(gOrg))
+    return false;
+  if (num_edges(g) != num_edges(gOrg))
+    return false;
+  ArcIterator e, e_end;
+  for (boost::tie(e, e_end) = edges(g); e != e_end; ++e) {
+    if (not edge(source(*e, g), target(*e, g), gOrg).second)
+      return false;
+    if (capacity[*e] !=
+        capacityOrg[edge(source(*e, g), target(*e, g), gOrg).first])
+      return false;
+  }
+  return true;
+}
+
+bool checkMaxFlow(DiGraph &g, DiGraph &gOrg, const DiVertex &s,
+                  const DiVertex &t, unsigned int flow) {
+  if (not equalGraph(g, gOrg)) {
+    std::cout << "The two graphs don't match." << std::endl;
+    return false;
+  }
+  unsigned int boostFlow{boost::boykov_kolmogorov_max_flow(gOrg, s, t)};
+  if (flow != boostFlow) {
+    std::cout << "Your calculated flow of " << flow << " is not correct." << std::endl;
+    return false;
+  }
+  EdgeCapacityMap capacity{get(boost::edge_capacity, g)};
+  EdgeResidualCapacityMap res_capacity{get(boost::edge_residual_capacity, g)};
+  EdgeReverseMap rev{get(boost::edge_reverse, g)};
+  // check flows at vertices
+  DiVertexIterator v, v_end;
+  boost::graph_traits<DiGraph>::out_edge_iterator eo, eo_end;
+  Arc r;
+  unsigned int flowPos, flowNeg;
+  for (boost::tie(v, v_end) = vertices(g); v != v_end; ++v) {
+    flowPos = 0;
+    flowNeg = 0;
+    for (boost::tie(eo, eo_end) = boost::out_edges(*v, g); eo != eo_end; ++eo) {
+      r = rev[*eo];
+      if (capacity[*eo] >= res_capacity[*eo]) {
+        flowNeg += capacity[*eo];
+        flowPos += res_capacity[*eo];
+      }
+      if (capacity[r] >= res_capacity[r]) {
+        flowPos += capacity[r];
+        flowNeg += res_capacity[r];
+      }
+    }
+    if (*v == s) {
+      if (flowNeg != flowPos + flow) {
+        std::cout << "Flow in s is not correct." << std::endl;
+        return false;
+      }
+      continue;
+    }
+    if (*v == t) {
+      if (flowNeg + flow != flowPos) {
+        std::cout << "Flow in t is not correct." << std::endl;
+        return false;
+      }
+      continue;
+    }
+    if (flowNeg != flowPos) {
+      std::cout << "Flow conservation is not met." << std::endl;
+      return false;
+    }
+  }
+  std::cout << "The flow is a maximum flow of value " << flow << std::endl;
   return true;
 }

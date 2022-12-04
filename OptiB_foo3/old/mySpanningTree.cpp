@@ -15,7 +15,6 @@
 using namespace boost;
 
 
-
 int get_number_of_nodes(const Graph& g) {
     graph_traits<Graph>::vertex_iterator node_iter_begin, node_iter_end;
     tie(node_iter_begin, node_iter_end) = vertices(g);
@@ -24,11 +23,8 @@ int get_number_of_nodes(const Graph& g) {
 }
 
 
-
 std::vector<Edge> my_spanning_tree(Graph& g) {
     std::vector<Edge> spanning_tree;
-
-
 
     //std::cout << "Building Qeue" << std::endl;
     // Construct Priorityque (minheap) with edge weights... O(1) access though with O(log(n)) construction
@@ -42,12 +38,10 @@ std::vector<Edge> my_spanning_tree(Graph& g) {
         Edge_weight_queue.push(std::make_pair(weight, *edge_it));
         //std::cout << "size " << sizeof(*edge_it)<<  " vs " << sizeof(edge_it) << std::endl;
     }
-   // std::cout << "Done building queue, now adding edges" << std::endl;
-
+    // std::cout << "Done building queue, now adding edges" << std::endl;
 
 
     size_t num_of_nodes = get_number_of_nodes(g);
-    //std::cout << "Graph has " << num_of_nodes << " nodes and " << " edges" << std::endl;
 
     // Now add edges in increasing order of weight, rejecting them if they close a loop
     // 
@@ -84,9 +78,7 @@ std::vector<Edge> my_spanning_tree(Graph& g) {
                 nodes_with_colour[max_colour] = std::vector<int>{ node1, node2 };
                 //std::cout << "both unseen nodes " << node1 << " & " << node2 << ", now with colour " << max_colour << std::endl;
                 spanning_tree.push_back(edge);
-
             }
-
         }
         else {
             if (colour1 == -2) {
@@ -112,12 +104,9 @@ std::vector<Edge> my_spanning_tree(Graph& g) {
 
                 //Remove entries that have colour 2
                 nodes_with_colour.erase(colour2);
-
             }
             spanning_tree.push_back(edge);
         }
-
     }
-
     return spanning_tree;
-}
+};

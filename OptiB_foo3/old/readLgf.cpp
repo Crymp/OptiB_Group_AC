@@ -37,54 +37,7 @@ Graph readGraphFromFile(const std::string &filename) {
   EdgeWithWeight edgew;
   while (ifs && (not line.empty())) {
     edgew = convertEdgeline(line);
-    add_edge(edgew.first.first, edgew.first.second,
-             EdgeWeightProperty(edgew.second), g);
-    std::getline(ifs, line);
-  }
-
-  ifs.close();
-
-  return g;
-}
-
-// Read DiGraph from file in lemongraph format (.lgf)
-DiGraph readDiGraphFromFile(const std::string &filename) {
-  std::ifstream ifs;
-  ifs.open(filename, std::ifstream::in);
-  std::string line;
-  for (unsigned int i = 0; i < 4; ++i) {
-    std::getline(ifs, line);
-  }
-  DiGraph g;
-  EdgeCapacityMap capacity = get(boost::edge_capacity, g);
-  EdgeResidualCapacityMap residual_capacity =
-      get(boost::edge_residual_capacity, g);
-  EdgeReverseMap rev = get(boost::edge_reverse, g);
-  std::getline(ifs, line);
-  while (not line.empty()) {
-    boost::add_vertex(g);
-    std::getline(ifs, line);
-  }
-
-  for (unsigned int i = 0; i < 2; ++i) {
-    std::getline(ifs, line);
-  }
-
-  std::getline(ifs, line);
-  EdgeWithWeight edgew;
-  Arc e1, e2;
-  while (ifs && (not line.empty())) {
-    edgew = convertEdgeline(line);
-    boost::add_edge(edgew.first.first, edgew.first.second, g);
-    boost::add_edge(edgew.first.second, edgew.first.first, g);
-    e1 = edge(edgew.first.first, edgew.first.second, g).first;
-    e2 = edge(edgew.first.second, edgew.first.first, g).first;
-    capacity[e1] = edgew.second;
-    capacity[e2] = edgew.second;
-    residual_capacity[e1] = 0;
-    residual_capacity[e2] = 0;
-    rev[e1] = e2;
-    rev[e2] = e1;
+    add_edge(edgew.first.first, edgew.first.second, EdgeWeightProperty(edgew.second), g);
     std::getline(ifs, line);
   }
 

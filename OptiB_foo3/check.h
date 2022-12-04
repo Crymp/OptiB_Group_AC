@@ -1,12 +1,17 @@
 #include "types.h"
 
-// Check whether the given mst is a proper minimal spanning tree for graph g
-bool checkSpanningTree(const Graph &g, const std::vector<Edge> &mst);
+// Check whether the given partition is a valid bipartition or an odd cycle
+bool checkBiPartition(const Graph &g, const Partition_variant &res);
 
-// Check whether the given path is a shortest path in g
-bool checkPath(const Graph &g, const Vertex &startVertex,
-               const Vertex &endVertex, const std::vector<Vertex> &path);
+// Check whether the given matching is a valid maximum weighted matching
+bool checkMaxWeightedMatching(const Graph &g,
+                              const std::vector<Vertex> &matching);
 
-// Check whether the steiner tree is valid
-bool checkSteinerTree(Graph g, const std::vector<Edge> &steiner_tree,
-                      const std::vector<Vertex> &terminals);
+// Check betting game bet
+// bool checkBettingGame(const std::map<Team, unsigned int> &bet, const
+// std::vector<Matchday> &season);
+bool checkBettingGame(const std::map<Team, unsigned int> &bet,
+                      const std::vector<Matchday> &season);
+
+bool checkMaxFlow(DiGraph &g, DiGraph &gOrg, const DiVertex &s,
+                  const DiVertex &t, unsigned int flow);

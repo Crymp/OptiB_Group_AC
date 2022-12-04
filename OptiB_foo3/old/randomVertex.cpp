@@ -4,12 +4,12 @@
 
 #include <boost/graph/random.hpp>
 
-std::pair<DiVertex, DiVertex> get_tuple_of_distinct_vertices(const DiGraph &g) {
+std::pair<Vertex, Vertex> get_tuple_of_distinct_vertices(const Graph &g) {
   // generate random start and end vertex
   time_t seed = time(0);
   std::mt19937 RandomNumGen(seed++);
-  DiVertex startVertex = random_vertex(g, RandomNumGen);
-  DiVertex endVertex;
+  Vertex startVertex = random_vertex(g, RandomNumGen);
+  Vertex endVertex;
   do {
     endVertex = random_vertex(g, RandomNumGen);
   } while (startVertex == endVertex);

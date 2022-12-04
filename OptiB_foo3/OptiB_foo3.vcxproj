@@ -128,43 +128,27 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="check.cpp" />
-    <ClCompile Include="myShortestPath.cpp" />
-    <ClCompile Include="mySpanningTree.cpp" />
-    <ClCompile Include="mySteinerTree.cpp" />
+    <ClCompile Include="FootballBettingGameParser.cpp" />
+    <ClCompile Include="MyBipartition.cpp" />
+    <ClCompile Include="MyFootballBettingGame.cpp" />
+    <ClCompile Include="MyMaxFlow.cpp" />
+    <ClCompile Include="MyMaxWeightedMatching.cpp" />
     <ClCompile Include="OptiB_foo3.cpp" />
     <ClCompile Include="randomVertex.cpp" />
     <ClCompile Include="readLgf.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="check.h" />
-    <ClInclude Include="myShortestPath.h" />
-    <ClInclude Include="mySpanningTree.h" />
-    <ClInclude Include="mySteinerTree.h" />
+    <ClInclude Include="FootballBettingGameParser.h" />
+    <ClInclude Include="maximum_weighted_matching.hpp" />
+    <ClInclude Include="max_cardinality_matching.hpp" />
+    <ClInclude Include="MyBipartition.h" />
+    <ClInclude Include="MyFootballBettingGame.h" />
+    <ClInclude Include="MyMaxFlow.h" />
+    <ClInclude Include="MyMaxWeightedMatching.h" />
     <ClInclude Include="randomVertex.h" />
     <ClInclude Include="readLgf.h" />
     <ClInclude Include="types.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="CMakeLists.txt" />
-    <Text Include="Graph1_Terminals.txt" />
-    <Text Include="Graph2_Terminals.txt" />
-    <Text Include="Graph3_Terminals.txt" />
-    <Text Include="Graph4_Terminals1.txt" />
-    <Text Include="Graph4_Terminals2.txt" />
-    <Text Include="Graph4_Terminals3.txt" />
-    <Text Include="Graph4_Terminals4.txt" />
-    <Text Include="Graph5_Terminals1.txt" />
-    <Text Include="Graph5_Terminals2.txt" />
-    <Text Include="Graph5_Terminals3.txt" />
-    <Text Include="Graph6_Terminals.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Graph1.lgf" />
-    <None Include="Graph2.lgf" />
-    <None Include="Graph3.lgf" />
-    <None Include="Graph4.lgf" />
-    <None Include="Graph5.lgf" />
-    <None Include="Graph6.lgf" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
