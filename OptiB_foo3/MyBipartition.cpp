@@ -15,7 +15,10 @@ Partition_variant my_bipartition(const Graph &g) {
   std::vector<Vertex> odd_cycle;
   bool bipartite{true};
 
-  // TODO compute bipartition
+  // Computes bipartition, by iterating over nodes in BFS and marking each node 
+  // a colour (ie which bipartite set they belong) opposite to colour of neighbour
+  // Stops BFS when it is discovered that two neighbouring nodes have the same colour
+  // after which will break BFS, and try to find odd loop (see code comment later).
 
   std::unordered_map<Vertex, int> unmarked_nodes;
   for (auto v : make_iterator_range(vertices(g))) {unmarked_nodes[v] = -1;}
@@ -26,7 +29,7 @@ Partition_variant my_bipartition(const Graph &g) {
 
   std::vector<int> debug(unmarked_nodes.size(), -2);
 
-  Vertex odd_loop_root;
+  Vertex odd_loop_root; // root in BFS search for odd_loop (once it
   
   // Loop until all nodes marked (or until it discovered that not bipartite)
   while (unmarked_nodes.size() != 0) {
@@ -139,10 +142,6 @@ find_odd_loop:
           queue.pop_front();
       }
   }
-
-      
- 
-
 
   //return
   if (bipartite) {
