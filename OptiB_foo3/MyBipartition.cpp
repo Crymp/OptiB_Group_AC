@@ -17,10 +17,6 @@ Partition_variant my_bipartition(const Graph &g) {
 
   // TODO compute bipartition
 
-
-  // Add all nodes to list of unmarked nodes)
-  //std::vector<Vertex> unmarked_nodes;
-  //for (auto v : make_iterator_range(vertices(g))) {unmarked_nodes.push_back(v);}
   std::unordered_map<Vertex, int> unmarked_nodes;
   for (auto v : make_iterator_range(vertices(g))) {unmarked_nodes[v] = -1;}
 
@@ -30,22 +26,17 @@ Partition_variant my_bipartition(const Graph &g) {
 
   std::vector<int> debug(unmarked_nodes.size(), -2);
 
-  Vertex odd_loop_start;
-
-  int i = 0;
+  Vertex odd_loop_root;
+  
   // Loop until all nodes marked (or until it discovered that not bipartite)
   while (unmarked_nodes.size() != 0) {
-     // std::cout << "# unmarked: " << unmarked_nodes.size() << "\n";
-
-      // Select arbitrary unmarked node, and mark it
+      // Select arbitrary unmarked node, and give it an arbitrary colour
       Vertex node0 = (*unmarked_nodes.begin()).first;
       unmarked_nodes.erase(node0);
-
       colours[node0] = 0;
       myPartition.first.push_back(node0);
-      debug[node0] = i;
 
-      // Iteratively find and mark neighbours, until no unmarked node can be found
+      // BFS through all nodes connected to node0
       std::deque<Vertex> node_queue{ node0 };
       while (node_queue.size() != 0) {
           Vertex node1 = node_queue.front();
@@ -53,18 +44,18 @@ Partition_variant my_bipartition(const Graph &g) {
           // Loop through all neighbouring nodes
           for (auto edge : make_iterator_range(out_edges(node1, g))) {
               Vertex node2 = target(edge, g);
+
+              // Check if bipartition violates (ie neighbouring nodes of same colour)
               if (colours[node2] == colours[node1]) {
-                  // Two neighbouring nodes have the same colour..
-                  // Break assignment and go find that odd loop
-                  odd_loop_start = node2;
+                  // Note bipartite! stop BFS search and find that odd loop
+                  odd_loop_root = node2; // This node must be part of the odd loop
                   bipartite = false;
                   goto find_odd_loop;
               }
+              // node2 unmarked; assign its colour opposite to node1
               if (colours[node2] == -1) {
-                  // node2 unmarked: mark it opposite colour
                   unmarked_nodes.erase(node2);
                   node_queue.push_back(node2);
-                  debug[node2] = i;
                   if (colours[node1] == 0) {
                       colours[node2] = 1;
                       myPartition.second.push_back(node2);
@@ -77,14 +68,13 @@ Partition_variant my_bipartition(const Graph &g) {
           }
           node_queue.pop_front();
       }
-      i++;
   }
 
 
 
 find_odd_loop:
   if (bipartite == false) {
-      // Find odd cycle with BFS and root odd_loop_start
+      // Find odd cycle with BFS and root odd_loop_root
       //
       // In BFS pattern, iterate out from the root s until leafs of BFS "tree" meet at neighbouring nodes v1 and v2.
       // (Note: not actually a tree since it contains repeated nodes).
@@ -93,12 +83,14 @@ find_odd_loop:
       // To check this; for every node v in search path we keep lookup table (unordered hashmap; O(1) access) for all
       // nodes encountered path from s to v. Ie a node u will only be in lookup table of v, if u is in path from s to v,
       // and the lookup table table will map u to the index position of u in path from s to v.
+      // A bit brute force in terms of graph logic... but it works
       
-      // Lookup table to indicate
+      // Lookup table to indicate which nodes (and their position) are in path from root to a "leaf"
       std::vector<std::unordered_map<Vertex, int>> tree_paths(colours.size());
-      tree_paths[odd_loop_start][odd_loop_start] = 0;
+      tree_paths[odd_loop_root][odd_loop_root] = 0;
      
-      std::deque<Vertex> queue{ odd_loop_start };
+      // BFS search (add nodes to queue until cycle found)
+      std::deque<Vertex> queue{ odd_loop_root };
       while (true) {
           Vertex node1 = queue.front();          
           for (auto e : make_iterator_range(out_edges(node1, g))) {
@@ -118,7 +110,7 @@ find_odd_loop:
                    bool repeated_nodes = false;
                    for (auto node_idx : tree_paths[node2]) {
                        Vertex v = node_idx.first;
-                       if ((v!= odd_loop_start) && (tree_paths[node1].find((v)) != tree_paths[node1].end())) {
+                       if ((v!= odd_loop_root) && (tree_paths[node1].find((v)) != tree_paths[node1].end())) {
                            // node v in both paths from root to node1 and node2
                            repeated_nodes = true;
                            break;
@@ -133,10 +125,10 @@ find_odd_loop:
 
                        // path from root to node1
                        for (auto node_idx : tree_paths[node1]) {
-                           cycle[node_idx.first] = node_idx.second;
+                           cycle[node_idx.second] = node_idx.first;
                        }
 
-                       // path from node2 to root (ie add in reverse
+                       // path from node2 to root (ie add in reverse)
                        for (auto node_idx : tree_paths[node2]) {
                            cycle[len - 1 - node_idx.second] = node_idx.first;
                        }
@@ -174,10 +166,10 @@ find_odd_loop:
 //    std::cout << "Searching for odd loop\n";
 
 //    //unordered_map<Vertex, int> marked;
-//    //marked[odd_loop_start] = 1;
+//    //marked[odd_loop_root] = 1;
 //    std::unordered_map<Vertex, std::vector<Vertex>> node_indexes;
-//    node_indexes[odd_loop_start] = std::vector<Vertex>{ odd_loop_start };
-//    std::deque<Vertex> queue{odd_loop_start};
+//    node_indexes[odd_loop_root] = std::vector<Vertex>{ odd_loop_root };
+//    std::deque<Vertex> queue{odd_loop_root};
 
 //    bool flag = true;
 //    while (flag) {
@@ -190,7 +182,7 @@ find_odd_loop:
 
 //            Vertex node2 = target(e, g);
 //            std::cout << "    " << node2 << ": ";
-//            if ((node2 == odd_loop_start) && (node_indexes[node2].size()>1)) {
+//            if ((node2 == odd_loop_root) && (node_indexes[node2].size()>1)) {
 //                std::cout << "FOUND IT!\n";
 //               // flag = false;
 //                std::cout << node_indexes[node2].size() << "\n";
