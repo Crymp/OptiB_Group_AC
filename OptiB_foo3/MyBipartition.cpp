@@ -50,17 +50,11 @@ Partition_variant my_bipartition(const Graph &g) {
       while (node_queue.size() != 0) {
           Vertex node1 = node_queue.front();
 
-          if (colours[node1] == -1) {
-              std::cout << "oops\n";
-          }
-
           // Loop through all neighbouring nodes
           for (auto edge : make_iterator_range(out_edges(node1, g))) {
               Vertex node2 = target(edge, g);
-              //std::cout << "(" << node1 << ", " << colours[node1] << ") -> (" << node2 << ", " << colours[node2] << ") ";
               if (colours[node2] == colours[node1]) {
                   // Two neighbouring nodes have the same colour..
-                  std::cout << "ALARM!!! Graph is not bipartite\n";
                   // Break assignment and go find that odd loop
                   odd_loop_start = node2;
                   bipartite = false;
@@ -80,8 +74,6 @@ Partition_variant my_bipartition(const Graph &g) {
                       myPartition.first.push_back(node2);
                   }
               }
-              //std::cout << colours[node2] << "\n";
-
           }
           node_queue.pop_front();
       }
@@ -90,82 +82,66 @@ Partition_variant my_bipartition(const Graph &g) {
 
 
 
-
-  std::cout << "\n";
-  std::cout << "Reached end of loop.... is bipartite: " << bipartite << "\n";
-// If not bipartite, use this code section to find an odd loop
 find_odd_loop:
-
-  //std::cout << "Debug Info:\n";
-  //for (auto v : make_iterator_range(vertices(g))) {
-  //    std::cout << v << ": " << colours[v] << ", " << debug[v] << "\n";
-  //}
   if (bipartite == false) {
-      std::cout << "Searching for odd loop\n";
-
-      //unordered_map<Vertex, int> marked;
-      //marked[odd_loop_start] = 1;
-      //std::unordered_map<Vertex, std::vector<Vertex>> node_indexes;
-      //node_indexes[odd_loop_start] = std::vector<Vertex>{ odd_loop_start };
-      std::deque<Vertex> queue{odd_loop_start};
+      // Find odd cycle with BFS and root odd_loop_start
+      //
+      // In BFS pattern, iterate out from the root s until leafs of BFS "tree" meet at neighbouring nodes v1 and v2.
+      // (Note: not actually a tree since it contains repeated nodes).
+      // The paths from s->v1 and v2->s joined will be the odd elementary cycle, if |s->v1| + |s->v2| is odd
+      // and when {s->v1 U v2->s} contains no repeated nodes (other than root s).
+      // To check this; for every node v in search path we keep lookup table (unordered hashmap; O(1) access) for all
+      // nodes encountered path from s to v. Ie a node u will only be in lookup table of v, if u is in path from s to v,
+      // and the lookup table table will map u to the index position of u in path from s to v.
+      
+      // Lookup table to indicate
       std::vector<std::unordered_map<Vertex, int>> tree_paths(colours.size());
       tree_paths[odd_loop_start][odd_loop_start] = 0;
      
-
-      bool flag = true;
-      while (flag) {
-          //Vertex node1 = (*node_indexes.begin()).first;
-          //std::cout << "QUEUEU is "; for (auto v : queue) { std::cout << v << ", "; }; std::cout << "\n";
-          Vertex node1 = queue.front();
-         // std::cout << "list is: "; for (auto v : node_indexes[node1]) { std::cout << "(" << v << ", " << debug[v] << ")" << ", "; }; std::cout << "\n";
-          
+      std::deque<Vertex> queue{ odd_loop_start };
+      while (true) {
+          Vertex node1 = queue.front();          
           for (auto e : make_iterator_range(out_edges(node1, g))) {
               Vertex node2 = target(e, g);
-              //std::cout << "    " << node2 << ": ";
-          
+
               if (tree_paths[node2].empty()) {
                   // node2 unseen in BFS
                   tree_paths[node2] = tree_paths[node1];
                   tree_paths[node2][node2] = tree_paths[node1].size();
                   queue.push_back(node2);
-                  //std::cout << debug[node2] << ", unseen\n";
               }
-              else {
-                  // node2 in BFS, check if they form an odd cycle
-                  if ((tree_paths[node1].size() + tree_paths[node2].size() - 1) % 2 == 1) {
-
-
-
-                      bool repeated_nodes = false;
+              
+              // node2 in bfs, check if they form an odd cycle
+              else if ((tree_paths[node1].size() + tree_paths[node2].size() - 1) % 2 == 1) {                   
                       
-                      // Check cycle is elementary, ie no repeated nodes (other than root)
-                      for (auto x : tree_paths[node2]) {
-                          if ((x.first != odd_loop_start) && (tree_paths[node1].find((x.first)) != tree_paths[node1].end())) {
-                              repeated_nodes = true;
-                              break;
-                          }
-                      }
+                   // check cycle is elementary, ie no repeated nodes (other than root)
+                   bool repeated_nodes = false;
+                   for (auto node_idx : tree_paths[node2]) {
+                       Vertex v = node_idx.first;
+                       if ((v!= odd_loop_start) && (tree_paths[node1].find((v)) != tree_paths[node1].end())) {
+                           // node v in both paths from root to node1 and node2
+                           repeated_nodes = true;
+                           break;
+                       }
+                   }
 
-                      // Finally found odd elementary cycle (now combine them)
-                      if (repeated_nodes == false) {
+                   if (repeated_nodes == false) {
+                       // build odd cycle by joining bfs paths from root to node1 and node2
 
-                          int len = tree_paths[node1].size() + tree_paths[node2].size(); // length of cycle
-                          std::vector<Vertex> cycle (len);
+                       int len = tree_paths[node1].size() + tree_paths[node2].size(); // length of cycle
+                       std::vector<Vertex> cycle (len);
 
-                          // Add nodes from 1st path from front
-                          for (auto x : tree_paths[node1]) {
-                              int idx = x.second;
-                              int v = x.first;
-                              cycle[x.second] = x.first;
-                          }
+                       // path from root to node1
+                       for (auto node_idx : tree_paths[node1]) {
+                           cycle[node_idx.first] = node_idx.second;
+                       }
 
-                          // Add nodes from 2nd path from behind (skip root node)
-                          for (auto x : tree_paths[node2]) {
-                              cycle[len - 1 - x.second] = x.first;
-                          }
-                          return cycle;
-                      }
-                  }
+                       // path from node2 to root (ie add in reverse
+                       for (auto node_idx : tree_paths[node2]) {
+                           cycle[len - 1 - node_idx.second] = node_idx.first;
+                       }
+                       return cycle;
+                   }
               }
           }
           queue.pop_front();
