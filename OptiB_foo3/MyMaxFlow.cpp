@@ -68,7 +68,9 @@ unsigned int my_maxflow(DiGraph& g, const DiVertex& s, const DiVertex& t) {
         }
 
         // Find shorted path of residual_capacities from s to t
-        boost::dijkstra_shortest_paths(g, s, predecessor_map(boost::make_iterator_property_map(preds.begin(), get(boost::vertex_index, g))).distance_map(boost::make_iterator_property_map(dists.begin(), get(boost::vertex_index, g))));
+        boost::dijkstra_shortest_paths(g, s,
+            predecessor_map(boost::make_iterator_property_map(preds.begin(), get(boost::vertex_index, g))).distance_map(boost::make_iterator_property_map(dists.begin(),
+            get(boost::vertex_index, g))));
       
         // Terminate if path involves a saturated edge (if true for shortest, this will be true for all,... see beginning comment)
         if (dists[t] >= max_val) {

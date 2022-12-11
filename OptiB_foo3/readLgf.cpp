@@ -57,8 +57,7 @@ DiGraph readDiGraphFromFile(const std::string &filename) {
   }
   DiGraph g;
   EdgeCapacityMap capacity = get(boost::edge_capacity, g);
-  EdgeResidualCapacityMap residual_capacity =
-      get(boost::edge_residual_capacity, g);
+  EdgeResidualCapacityMap residual_capacity = get(boost::edge_residual_capacity, g);
   EdgeReverseMap rev = get(boost::edge_reverse, g);
   std::getline(ifs, line);
   while (not line.empty()) {

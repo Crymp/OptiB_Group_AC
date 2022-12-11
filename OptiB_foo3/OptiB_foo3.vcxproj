@@ -142,6 +142,7 @@
     <ClInclude Include="FootballBettingGameParser.h" />
     <ClInclude Include="maximum_weighted_matching.hpp" />
     <ClInclude Include="max_cardinality_matching.hpp" />
+    <ClInclude Include="min_cost_max_flow_utils.hpp" />
     <ClInclude Include="MyBipartition.h" />
     <ClInclude Include="MyFootballBettingGame.h" />
     <ClInclude Include="MyMaxFlow.h" />

@@ -28,7 +28,8 @@ int main(int argc, char** argv) {
         << std::endl;
 
     std::string arg0;
-    std::cin >> arg0;
+    //std::cin >> arg0;
+    arg0 = "BM";
 
     if (arg0 == "B") {
         std::cout << "Which instance would you like to solve (1,2,3,4)?"
@@ -51,7 +52,8 @@ int main(int argc, char** argv) {
         std::cout << "Which instance would you like to solve (1,2,3,4)?"
             << std::endl;
         std::string arg1;
-        std::cin >> arg1;
+        //std::cin >> arg1;
+        arg1 = "1";
         std::cout << "Computing Bipartite Matching of Graph " << arg1 << ":"
             << std::endl;
         Graph g{ readGraphFromFile("graph" + arg1 + ".lgf") };
@@ -77,6 +79,7 @@ int main(int argc, char** argv) {
             << std::endl;
         std::string arg1;
         std::cin >> arg1;
+        std::cout << "Computing Maximum Flow of Graph " << arg1 << ":" << std::endl;
         std::cout << "Computing Maximum Flow of Graph " << arg1 << ":" << std::endl;
         DiGraph g{ readDiGraphFromFile("graph" + arg1 + ".lgf") };
         // TODO DiGraph has no deep copy constructor

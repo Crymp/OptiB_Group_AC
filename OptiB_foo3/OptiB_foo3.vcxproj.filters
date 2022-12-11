@@ -51,5 +51,6 @@
     <ClInclude Include="randomVertex.h" />
     <ClInclude Include="readLgf.h" />
     <ClInclude Include="types.h" />
+    <ClInclude Include="min_cost_max_flow_utils.hpp" />
   </ItemGroup>
 </Project>
