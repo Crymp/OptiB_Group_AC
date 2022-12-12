@@ -73,10 +73,9 @@ Partition_variant my_bipartition(const Graph &g) {
       }
   }
 
-
-
 find_odd_loop:
   if (bipartite == false) {
+      std::cout << "NOT BIPARTITE!" << std::endl;
       // Find odd cycle with BFS and root odd_loop_root
       //
       // In BFS pattern, iterate out from the root s until leafs of BFS "tree" meet at neighbouring nodes v1 and v2.

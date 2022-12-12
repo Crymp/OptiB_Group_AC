@@ -52,8 +52,8 @@ int main(int argc, char** argv) {
         std::cout << "Which instance would you like to solve (1,2,3,4)?"
             << std::endl;
         std::string arg1;
-        //std::cin >> arg1;
-        arg1 = "1";
+        std::cin >> arg1;
+        //arg1 = "1";
         std::cout << "Computing Bipartite Matching of Graph " << arg1 << ":"
             << std::endl;
         Graph g{ readGraphFromFile("graph" + arg1 + ".lgf") };

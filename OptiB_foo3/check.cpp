@@ -32,12 +32,8 @@ bool checkBiPartition(const Graph &g, const Partition_variant &res) {
     return false;
   }
   if (isBiPartition) {
-    std::vector<Vertex> myPartitionA(
-        boost::get<std::pair<std::vector<Vertex>, std::vector<Vertex>>>(res)
-            .first);
-    std::vector<Vertex> myPartitionB(
-        boost::get<std::pair<std::vector<Vertex>, std::vector<Vertex>>>(res)
-            .second);
+    std::vector<Vertex> myPartitionA(boost::get<std::pair<std::vector<Vertex>, std::vector<Vertex>>>(res).first);
+    std::vector<Vertex> myPartitionB(boost::get<std::pair<std::vector<Vertex>, std::vector<Vertex>>>(res).second);
     if (myPartitionA.size() + myPartitionB.size() != boost::num_vertices(g)) {
       std::cout << "The partitioning is invalid." << std::endl;
       return false;
@@ -72,6 +68,9 @@ bool checkBiPartition(const Graph &g, const Partition_variant &res) {
 
 bool checkMaxWeightedMatching(const Graph &g, const std::vector<Vertex> &mate) {
 
+    std::cout << "Boost Bipartite?: "<< is_bipartite(g) << "\n";
+
+
   VertexIterator vi, vi_end;
 
   // check matching
@@ -79,12 +78,12 @@ bool checkMaxWeightedMatching(const Graph &g, const std::vector<Vertex> &mate) {
     if (mate[*vi] != boost::graph_traits<Graph>::null_vertex()) {
       // check if all chosen edges exist in g
       if (!edge(*vi, mate[*vi], g).second) {
-        std::cout << "The computed matching is invalid." << std::endl;
+        std::cout << "The computed matching is invalid: Does not exist in g: (" << *vi << ", " << mate[*vi] << ")" << std::endl;
         return false;
       }
       // check that no chosen edges are incident
       if (mate[mate[*vi]] != *vi) {
-        std::cout << "The computed matching is invalid." << std::endl;
+        std::cout << "The computed matching is invalid: incident edges" << std::endl;
         return false;
       }
     }
@@ -96,12 +95,15 @@ bool checkMaxWeightedMatching(const Graph &g, const std::vector<Vertex> &mate) {
   int optWeight = matching_weight_sum(g, &optMate[0]);
   int weight = matching_weight_sum(g, &mate[0]);
   if (weight < optWeight) {
-    std::cout << "The computed matching has not maximum weight." << std::endl;
+    std::cout << "The computed matching has not maximum weight:" <<  weight << " < " << optWeight << std::endl;
   }
-  assert(weight == optWeight);
-  std::cout << "The computed matching has maximum weight " << weight << "."
-            << std::endl;
-  return true;
+  //assert(weight == optWeight);
+  else {
+      std::cout << "The computed matching has maximum weight " << weight << "."
+          << std::endl;
+      return true;
+  }
+  return false;
 }
 
 // bool checkBettingGame(const std::map<Team, unsigned int> &bet, const
