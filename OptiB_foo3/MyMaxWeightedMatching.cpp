@@ -14,6 +14,13 @@ using namespace boost;
 
 
 
+//void add_Edges(Vertex u, Vertex v, long weight, long capacity,
+//	MyGraph G,) {
+//
+//
+//}
+
+
 std::vector<Vertex> my_max_weighted_matching(const Graph& g) {
 	std::cout << "Boost Bipartite?: " << is_bipartite(g) << "\n";
 	std::vector<Vertex> mate(num_vertices(g));
@@ -53,10 +60,10 @@ std::vector<Vertex> my_max_weighted_matching(const Graph& g) {
 	}
 
 	MyGraph G;
-	MyCapacity capacity = get(edge_capacity, G);
-	MyReversed rev = get(edge_reverse, G);
-	MyResidualCapacity residual_capacity = get(edge_residual_capacity, G);
-	MyWeight Edge_weight = get(edge_weight, G);
+	MyCapacity capMap = get(edge_capacity, G);
+	MyReversed revMap = get(edge_reverse, G);
+	MyResidualCapacity res_capMap = get(edge_residual_capacity, G);
+	MyWeight weightMap = get(edge_weight, G);
 	
 	
 	// Add Vertices
@@ -67,29 +74,107 @@ std::vector<Vertex> my_max_weighted_matching(const Graph& g) {
 	
 	//max_cost++;
 	// Defining my own Graph
-	
-	// Add Arcs (and virtual reverse Arcs)
+
+
+	auto add_arc = [&G, &weightMap, &capMap, &res_capMap, &revMap](Vertex u, Vertex v, long weight, long capacity) {
+		auto a = add_edge(u, v, G);
+
+		weightMap[a.first] = weight;
+		capMap[a.first] = capacity;
+		res_capMap[a.first] = capacity;
+
+		// Define Reverse Arc (w,u) with weight and capacity (0 since actually not on graph)
+		auto rev_a = add_edge(v, u, G);
+		weightMap[rev_a.first] = -weight;
+		capMap[rev_a.first] = 0;
+		res_capMap[rev_a.first] = 0;
+
+		// Define arc reverse relations
+		revMap[a.first] = rev_a.first;
+		revMap[rev_a.first] = a.first;
+
+	};
+
+
 	for (Vertex u : U) {
 		for (auto e : make_iterator_range(out_edges(u, g))) {
 			Vertex w = target(e, g);
-
-			int weight = (max_cost - get(edge_weight, g, e));
-
-			// Define new Arc (u,w) with weight of max_weigh
-			auto a = add_edge(u, w, weight, G);
-			capacity[a.first] = 1;
-			residual_capacity[a.first] = 1;
-
-			// Define Reverse Arc (w,u) with weight and capacity (0 since actually not on graph)
-			auto rev_a = add_edge(w, u, -weight, G);
-			capacity[rev_a.first] = 0;
-			residual_capacity[rev_a.first] = 0;
-
-			// Define arc reverse relations
-			rev[a.first] = rev_a.first;
-			rev[rev_a.first] = a.first;
+			add_arc(u, w, max_cost - get(edge_weight, g, e), 1);
 		}
 	}
+
+	Vertex s = add_vertex(G);
+	for (Vertex u : U) {
+		add_arc(s, u, 0, 1);
+	}
+
+	Vertex t = add_vertex(G);
+	for (Vertex w : W) {
+		add_arc(w, t, 0, 1);
+	}
+
+
+
+
+	//std::cout << "Printing edges:\n";
+	//for (auto e : make_iterator_range(edges(G))) {
+	//	int cap = get(capMap, e);
+	//	if (true) {//if (cap != 0) {
+	//		std::cout << "(" << source(e, G) << ", " << target(e, G) << ") w:" << get(edge_weight, G, e) << ", cap:" << get(capMap, e) << ", f:" << capMap[e] - res_capMap[e] << "\n"; // 
+	//	}
+	//}
+
+
+		successive_shortest_path_nonnegative_weights(G, s, t);
+
+	std::vector<int> touched(num_vertices(g), 0);
+	for (auto a : make_iterator_range(edges(G))) {
+		Vertex u = source(a, G);
+		Vertex w = target(a, G);
+		int flow = capMap[a] - res_capMap[a];
+		
+		if ((u != s) && (u != t) && (w != s) && (w != t) && (capMap[a] != 0) && (flow == 1)) {
+			mate[u] = w;
+			mate[w] = u;
+			touched[u] = 1;
+			touched[w] = 1;
+		}
+	}
+
+	for (Vertex v : make_iterator_range(vertices(g))) {
+		if (touched[v] == 0) {
+			mate[v] = boost::graph_traits<Graph>::null_vertex();
+		}
+	}
+
+
+
+	//// Add Arcs (and virtual reverse Arcs)
+//for (Vertex u : U) {
+//	for (auto e : make_iterator_range(out_edges(u, g))) {
+//		Vertex w = target(e, g);
+
+//		long weight = (max_cost - get(edge_weight, g, e));
+
+//		// Define new Arc (u,w) with weight of max_weigh
+//		auto a = add_edge(u, w, G);
+//		Edge_weight[a.first] = weight;
+//		capacity[a.first] = 1;
+//		residual_capacity[a.first] = 1;
+
+//		// Define Reverse Arc (w,u) with weight and capacity (0 since actually not on graph)
+//		auto rev_a = add_edge(w, u, G);
+//		Edge_weight[rev_a.first] = -weight;
+//		capacity[rev_a.first] = 0;
+//		residual_capacity[rev_a.first] = 0;
+
+//		// Define arc reverse relations
+//		rev[a.first] = rev_a.first;
+//		rev[rev_a.first] = a.first;
+//	}
+//}
+
+
 
 //	// Add source vertex s, and edges (s,u) with cost 0 for all u in U:
 //	Vertex s = add_vertex(G);
@@ -154,14 +239,6 @@ std::vector<Vertex> my_max_weighted_matching(const Graph& g) {
 //			mate[v] = boost::graph_traits<Graph>::null_vertex();
 //		}
 //	}
-
-	std::cout << "Printing edges:\n";
-  for (auto e : make_iterator_range(edges(G))) {
-	  int cap = get(capacity, e);
-	  if(true){//if (cap != 0) {
-		  std::cout << "(" << source(e, G) << ", " << target(e, G) << ") w:" << get(edge_weight, G, e) << ", cap:" << get(capacity, e) << ", f:" << capacity[e] - residual_capacity[e] << "\n"; // 
-	  }
-	}
 
 
 //	

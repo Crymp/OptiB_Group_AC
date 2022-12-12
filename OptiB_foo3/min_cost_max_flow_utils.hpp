@@ -38,6 +38,7 @@ namespace boost {
         public:
             EdgeAdder(Graph& g, Weight& w, Capacity& c, Reversed& rev, ResidualCapacity& residualCapacity)
                 : m_g(g), m_w(w), m_cap(c), m_resCap(residualCapacity), m_rev(rev) {}
+            
             void addEdge(vertex_descriptor v, vertex_descriptor w, long weight, long capacity) {
                 Traits::edge_descriptor e, f;
                 e = add(v, w, weight, capacity);
